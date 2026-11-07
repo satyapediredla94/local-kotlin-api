@@ -25,5 +25,5 @@ docker run -d \
   --name "$CONTAINER_NAME" \
   "$IMAGE_NAME"
 
-echo "=== Deployment Complete! ==="
+echo "==== Deployment Complete! ===="
 docker ps
