@@ -1,16 +1,25 @@
 # --- Stage 1: Build the application ---
-FROM gradle:8.5-jdk17 AS builder
+FROM eclipse-temurin:17-jdk AS builder
 WORKDIR /app
-COPY . .
-# Build a shadow/fat JAR containing all dependencies
-./gradlew installDist/
+
+# Copy Gradle files and wrapper
+COPY gradlew build.gradle.kts settings.gradle.kts ./
+COPY gradle ./gradle
+
+# Grant execute permission to gradlew
+RUN chmod +x gradlew
+
+# Copy source code and build the distribution
+COPY src ./src
+RUN ./gradlew installDist --no-daemon
 
 # --- Stage 2: Run the application ---
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
-# Copy the built distribution from the builder stage
+
+# Copy the exact built distribution from the builder stage
 COPY --from=builder /app/build/install/local-kotlin-api /app
 
 EXPOSE 3000
-# Run the generated start script
-CMD ["./bin/local-kotlin-api"]
+# Run the generated start script inside bin/
+ENTRYPOINT ["/app/bin/local-kotlin-api"]

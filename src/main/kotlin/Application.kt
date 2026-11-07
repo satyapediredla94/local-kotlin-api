@@ -10,6 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
+import java.io.File
 import java.sql.DriverManager
 import java.sql.Statement
 
@@ -24,7 +25,14 @@ data class ErrorResponse(val error: String, val message: String)
 
 fun main() {
     // 1. Initialize Local SQLite Database
-    val connection = DriverManager.getConnection("jdbc:sqlite:shop.db")
+    // Inside your main function or database setup block:
+    val dataDir = File("data")
+    if (!dataDir.exists()) {
+        dataDir.mkdirs() // Creates the /app/data directory automatically
+    }
+
+    val dbUrl = "jdbc:sqlite:data/shop.db"
+    val connection = DriverManager.getConnection(dbUrl)
     connection.createStatement().execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +41,7 @@ fun main() {
             status TEXT
         )
     """)
-    println("Connected to local SQLite database.")
+    println("Connected to local SQLite database. \n")
 
     // 2. Start Ktor Embedded Server on Port 3000
     embeddedServer(Netty, port = 3000) {
@@ -50,8 +58,8 @@ fun main() {
                     return@post
                 }
 
-                println("[API Gateway / Router] Received POST request for /api/v1/orders")
-                println("[Payload]: Item = ${request.item}, Quantity = ${request.quantity}")
+                println("[API Gateway / Router] Received POST request for /api/v1/orders \n")
+                println("[Payload]: Item = ${request.item}, Quantity = ${request.quantity} \n")
 
                 if (request.item.isBlank() || request.quantity <= 0) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Bad Request", "Item and valid quantity are required."))
@@ -75,7 +83,7 @@ fun main() {
                 }
 
                 // 4. Send Success Response
-                println("[Success] Order saved with ID: $orderId")
+                println("[Success] Order saved with ID: $orderId \n")
                 call.respond(HttpStatusCode.Created, OrderResponse(
                     status = "success",
                     orderId = orderId,
@@ -93,7 +101,7 @@ fun main() {
                     return@get
                 }
 
-                println("[API Gateway] Received GET /api/v1/orders/$orderId")
+                println("[API Gateway] Received GET /api/v1/orders/$orderId \n")
 
                 val pstmt = connection.prepareStatement(
                     "SELECT id, item, quantity, status FROM orders WHERE id = $orderId"
